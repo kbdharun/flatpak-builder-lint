@@ -1,3 +1,4 @@
+import re
 from collections import defaultdict
 
 from . import Check
@@ -42,11 +43,12 @@ class FinishArgsCheck(Check):
                 self.warnings.add("finish-args-x11-without-ipc")
 
         for xdg_dir in ["xdg-data", "xdg-config", "xdg-cache"]:
-            if xdg_dir in fa["filesystem"]:
-                self.errors.add(f"finish-args-arbitrary-{xdg_dir}-access")
-
+            regexp_arbitrary = f"^{xdg_dir}(:(create|rw|ro)?)?$"
+            regexp_unnecessary = f"^{xdg_dir}(\\/.*)?(:(create|rw|ro)?)?$"
             for fs in fa["filesystem"]:
-                if fs.startswith(f"{xdg_dir}/") and fs.endswith(":create"):
+                if re.match(regexp_arbitrary, fs):
+                    self.errors.add(f"finish-args-arbitrary-{xdg_dir}-access")
+                elif re.match(regexp_unnecessary, fs):
                     self.errors.add(f"finish-args-unnecessary-{xdg_dir}-access")
 
         if "home" in fa["filesystem"] and "host" in fa["filesystem"]:
